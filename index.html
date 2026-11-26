@@ -1,20 +1,708 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Situational Awareness Campaign Launch</title>
-<link rel="stylesheet" href="style.css"></head>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Situational Awareness Launch</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:"Segoe UI",sans-serif;
+background:
+radial-gradient(circle at center,
+#1a0c3d 0%,
+#081120 70%,
+#02060a 100%);
+overflow:hidden;
+height:100vh;
+color:white;
+}
+
+#networkCanvas{
+position:absolute;
+inset:0;
+z-index:0;
+}
+
+#ui{
+position:absolute;
+z-index:10;
+width:100%;
+height:100%;
+}
+
+.topbar{
+position:absolute;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+gap:12px;
+align-items:center;
+}
+
+input{
+padding:10px;
+border-radius:8px;
+border:none;
+width:90px;
+}
+
+button{
+padding:10px 16px;
+border:none;
+border-radius:8px;
+font-weight:700;
+cursor:pointer;
+}
+
+#core{
+position:absolute;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+width:220px;
+height:220px;
+border-radius:50%;
+border:3px solid #00ffff;
+display:flex;
+align-items:center;
+justify-content:center;
+text-align:center;
+font-weight:bold;
+font-size:22px;
+
+box-shadow:
+0 0 30px #00ffff,
+0 0 80px rgba(0,255,255,.5);
+
+background:
+rgba(0,255,255,.08);
+
+transition:all .6s;
+}
+
+.node{
+position:absolute;
+width:160px;
+height:100px;
+
+border:
+2px solid rgba(255,255,255,.25);
+
+border-radius:14px;
+
+background:
+rgba(255,255,255,.05);
+
+backdrop-filter:blur(10px);
+
+display:flex;
+justify-content:center;
+align-items:center;
+
+cursor:pointer;
+
+transition:.5s;
+}
+
+.node:hover{
+border-color:#00ffff;
+}
+
+.node.signed{
+
+border-color:#00ffff;
+
+box-shadow:
+0 0 12px #00ffff,
+0 0 30px #00ffff,
+0 0 60px #00ffff;
+
+transform:scale(1.05);
+}
+
+.node img{
+width:90%;
+height:80%;
+object-fit:contain;
+}
+
+#syncMeter{
+
+position:absolute;
+
+left:50%;
+top:calc(50% + 140px);
+
+transform:translateX(-50%);
+
+font-size:20px;
+font-weight:bold;
+}
+
+#knowledgeGraph{
+
+position:absolute;
+right:20px;
+top:120px;
+
+padding:15px;
+
+border-radius:12px;
+
+background:
+rgba(255,255,255,.05);
+
+width:260px;
+}
+
+.knode{
+padding:8px;
+margin-bottom:8px;
+border-radius:8px;
+
+background:
+rgba(0,255,255,.1);
+
+opacity:0;
+
+transform:translateX(20px);
+transition:.6s;
+}
+
+.knode.active{
+opacity:1;
+transform:translateX(0);
+}
+
+#modal{
+position:fixed;
+inset:0;
+
+background:
+rgba(0,0,0,.75);
+
+display:none;
+
+align-items:center;
+justify-content:center;
+
+z-index:100;
+}
+
+#modalContent{
+
+background:#101927;
+
+padding:20px;
+
+border-radius:14px;
+}
+
+#signature{
+background:white;
+border-radius:8px;
+touch-action:none;
+}
+
+#finalOverlay{
+
+position:absolute;
+
+inset:0;
+
+display:none;
+
+justify-content:center;
+align-items:center;
+
+flex-direction:column;
+
+font-weight:900;
+text-align:center;
+
+background:
+radial-gradient(circle,
+rgba(0,255,200,.95),
+rgba(0,100,80,.95));
+
+z-index:200;
+}
+
+#finalOverlay h1{
+font-size:70px;
+}
+
+#finalOverlay h2{
+font-size:36px;
+margin-top:15px;
+}
+
+.pulse{
+position:absolute;
+width:10px;
+height:10px;
+border-radius:50%;
+background:white;
+box-shadow:
+0 0 20px white;
+pointer-events:none;
+}
+
+</style>
+</head>
+
 <body>
+
+<canvas id="networkCanvas"></canvas>
+
+<div id="ui">
+
 <div class="topbar">
-<h1>Situational Awareness Network Activation</h1>
-<label>Number of Signatories <input id="count" type="number" min="2" max="40" value="8"></label>
-<button id="build">Build Ceremony</button>
-<button id="reset">Reset</button>
+<input id="count" value="8" type="number" min="2" max="24">
+<button onclick="buildNodes()">
+Build
+</button>
 </div>
-<div class="core" id="core">NETWORK INITIALIZING</div>
-<div class="meter"><span id="pct">0</span>% SYNCHRONIZED</div>
-<div id="grid" class="grid"></div>
-<div id="final" class="final">
-<h1>SITUATIONAL AWARENESS</h1><h2>CAMPAIGN ACTIVATED</h2>
-<p>Every Individual A Sensor. Every Observation Matters. Every Action Prevents Harm.</p>
+
+<div id="core">
+NETWORK<br>INITIALIZING
 </div>
-<script src="app.js"></script>
-</body></html>
+
+<div id="syncMeter">
+0% SYNCHRONIZED
+</div>
+
+<div id="knowledgeGraph">
+<h3>Awareness Graph</h3>
+<div class="knode">Observation</div>
+<div class="knode">Hazard Recognition</div>
+<div class="knode">Communication</div>
+<div class="knode">Intervention</div>
+<div class="knode">Learning</div>
+<div class="knode">Leadership</div>
+<div class="knode">Prevention</div>
+</div>
+
+</div>
+
+<div id="modal">
+<div id="modalContent">
+
+<h3 style="margin-bottom:10px">
+Draw Signature
+</h3>
+
+<canvas
+id="signature"
+width="600"
+height="220"></canvas>
+
+<div style="margin-top:10px">
+
+<button onclick="clearPad()">
+Clear
+</button>
+
+<button onclick="confirmSignature()">
+Confirm
+</button>
+
+</div>
+
+</div>
+</div>
+
+<div id="finalOverlay">
+
+<h1>
+SITUATIONAL AWARENESS
+</h1>
+
+<h2>
+CAMPAIGN ACTIVATED
+</h2>
+
+<h3 style="margin-top:15px">
+ALL OBSERVERS ONLINE
+</h3>
+
+</div>
+
+<script>
+
+const canvas =
+document.getElementById("networkCanvas");
+
+const ctx =
+canvas.getContext("2d");
+
+let nodes=[];
+let signedCount=0;
+let activeNode=null;
+let pulses=[];
+
+function resize(){
+
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+drawNetwork();
+}
+
+window.addEventListener(
+"resize",
+resize
+);
+
+resize();
+
+function buildNodes(){
+
+document
+.querySelectorAll(".node")
+.forEach(x=>x.remove());
+
+nodes=[];
+
+signedCount=0;
+
+let total=
+parseInt(
+document.getElementById("count")
+.value
+);
+
+const cx=
+window.innerWidth/2;
+
+const cy=
+window.innerHeight/2;
+
+const radius=350;
+
+for(let i=0;i<total;i++){
+
+const angle=
+(i/total)*
+Math.PI*2;
+
+const x=
+cx+
+Math.cos(angle)*radius;
+
+const y=
+cy+
+Math.sin(angle)*radius;
+
+const div=
+document.createElement("div");
+
+div.className="node";
+
+div.innerHTML=
+"Tap To Sign";
+
+div.style.left=
+(x-80)+"px";
+
+div.style.top=
+(y-50)+"px";
+
+div.onclick=
+()=>openSignature(i);
+
+document.body.appendChild(div);
+
+nodes.push({
+x,
+y,
+element:div,
+signed:false
+});
+}
+
+drawNetwork();
+}
+
+function drawNetwork(){
+
+ctx.clearRect(
+0,
+0,
+canvas.width,
+canvas.height
+);
+
+const cx=
+canvas.width/2;
+
+const cy=
+canvas.height/2;
+
+nodes.forEach(n=>{
+
+if(!n.signed) return;
+
+ctx.beginPath();
+
+ctx.moveTo(n.x,n.y);
+
+ctx.lineTo(cx,cy);
+
+ctx.strokeStyle=
+"rgba(0,255,255,.9)";
+
+ctx.lineWidth=3;
+
+ctx.shadowBlur=15;
+ctx.shadowColor="#00ffff";
+
+ctx.stroke();
+});
+
+requestAnimationFrame(
+drawNetwork
+);
+}
+
+function openSignature(i){
+
+activeNode=i;
+
+document
+.getElementById("modal")
+.style.display="flex";
+}
+
+const signCanvas=
+document.getElementById("signature");
+
+const signCtx=
+signCanvas.getContext("2d");
+
+let drawing=false;
+
+signCanvas.addEventListener(
+"pointerdown",
+()=>{
+drawing=true;
+});
+
+signCanvas.addEventListener(
+"pointerup",
+()=>{
+drawing=false;
+});
+
+signCanvas.addEventListener(
+"pointermove",
+e=>{
+
+if(!drawing) return;
+
+const r=
+signCanvas.getBoundingClientRect();
+
+signCtx.lineWidth=3;
+
+signCtx.strokeStyle=
+"#000";
+
+signCtx.lineTo(
+e.clientX-r.left,
+e.clientY-r.top
+);
+
+signCtx.stroke();
+
+signCtx.beginPath();
+
+signCtx.moveTo(
+e.clientX-r.left,
+e.clientY-r.top
+);
+
+});
+function clearPad(){
+
+signCtx.clearRect(
+0,
+0,
+signCanvas.width,
+signCanvas.height
+);
+}
+
+function confirmSignature(){
+
+const url=
+signCanvas.toDataURL();
+
+let img=
+document.createElement("img");
+
+img.src=url;
+
+nodes[activeNode]
+.element.innerHTML="";
+
+nodes[activeNode]
+.element.appendChild(img);
+
+nodes[activeNode]
+.element.classList.add(
+"signed"
+);
+
+nodes[activeNode]
+.signed=true;
+
+signedCount++;
+
+activateGraph();
+
+spawnPulse(
+nodes[activeNode]
+);
+
+updateSync();
+
+clearPad();
+
+document
+.getElementById("modal")
+.style.display="none";
+}
+
+function spawnPulse(node){
+
+const pulse=
+document.createElement("div");
+
+pulse.className="pulse";
+
+document.body.appendChild(
+pulse
+);
+
+pulse.style.left=
+node.x+"px";
+
+pulse.style.top=
+node.y+"px";
+
+let cx=
+window.innerWidth/2;
+
+let cy=
+window.innerHeight/2;
+
+pulse.animate([
+{
+transform:"translate(0,0)"
+},
+{
+transform:
+`translate(
+${cx-node.x}px,
+${cy-node.y}px
+)`
+}
+],
+{
+duration:1200
+});
+
+setTimeout(
+()=>pulse.remove(),
+1300
+);
+}
+
+function activateGraph(){
+
+const graphNodes=
+document.querySelectorAll(
+".knode"
+);
+
+if(
+signedCount-1 <
+graphNodes.length
+){
+graphNodes[
+signedCount-1
+]
+.classList.add(
+"active"
+);
+}
+}
+
+function updateSync(){
+
+const total=
+nodes.length;
+
+const p=
+Math.round(
+(signedCount/total)*100
+);
+
+document
+.getElementById("syncMeter")
+.innerHTML=
+p+"% SYNCHRONIZED";
+
+document
+.getElementById("core")
+.innerHTML=
+"NETWORK<br>"+p+"%";
+
+if(
+signedCount===total
+){
+launchFinale();
+}
+}
+
+function launchFinale(){
+
+const core=
+document.getElementById(
+"core"
+);
+
+core.style.transform=
+"translate(-50%,-50%) scale(1.4)";
+
+core.style.background=
+"#00a19a";
+
+setTimeout(()=>{
+
+document
+.getElementById(
+"finalOverlay"
+)
+.style.display="flex";
+
+},1200);
+}
+
+buildNodes();
+
+</script>
+
+</body>
+</html>
